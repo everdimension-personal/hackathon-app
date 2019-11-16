@@ -3,48 +3,32 @@ import { Link } from 'react-router-dom';
 import { FormGroup, InputGroup, Button } from '@blueprintjs/core';
 import { AuthLayout } from './AuthLayout';
 
-interface Props {
-  onLogin: (user: any) => void;
-}
-export const Login: React.FC<Props> = ({ onLogin }) => {
+export function Signup() {
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState(false);
   return (
     <AuthLayout>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          const form = event.currentTarget;
-          const username = (form.elements as any).username.value;
-          const password = (form.elements as any).password.value;
-          setSending(true);
-          setTimeout(() => {
-            onLogin({ username });
-            setSending(false);
-          }, 2000);
-        }}
-      >
+      <form>
         <FormGroup
-          label="Имя пользователя"
+          label="Придумайте имя пользователя"
           labelFor="username"
           labelInfo="(required)"
         >
           <InputGroup
             id="username"
-            disabled={sending}
             name="username"
+            disabled={sending}
             placeholder=""
             required
           />
         </FormGroup>
 
         <FormGroup
-          label="Пароль"
+          label="Придумайте пароль"
           labelFor="password"
           labelInfo="(required)"
           helperText={
             <span>
-              Нет аккаунта? <Link to="/signup">Зарегистрируйтесь</Link>
+              Уже есть аккаунт? <Link to="/login">Войдите</Link>
             </span>
           }
         >
@@ -57,15 +41,11 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
             required
           />
         </FormGroup>
-        <Button
-          disabled={sending}
-          loading={sending}
-          type="submit"
-          style={{ width: '100%' }}
-        >
-          Войти
+
+        <Button disabled={sending} loading={sending} type="submit">
+          Зарегистрироваться
         </Button>
       </form>
     </AuthLayout>
   );
-};
+}
