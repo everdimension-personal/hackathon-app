@@ -8,11 +8,11 @@ let app = express();
 
 app.use(
   proxy('/api', {
-    target: 'https://api.github.com/',
+    target: 'http://163.172.139.34:8877',
     changeOrigin: true,
-    pathRewrite: {
-      '^/api': '', // rewrite path
-    },
+    // pathRewrite: {
+    //   '^/api': '', // rewrite path
+    // },
   }),
 );
 app.use(bundler.middleware());
