@@ -56,7 +56,7 @@ export const Service: React.FunctionComponent<Props> = ({
   }, [service]);
 
   const request = useCallback(() => {
-    return ky(`/api/registry/${registry.contractId}/${service.id}/history`)
+    return ky(`${process.env.BASE_URL}/api/registry/${registry.contractId}/${service.id}/history`)
       .json()
       .then((response: ServerResponse) => response.result);
   }, [registry.contractId, service.id]);
@@ -90,7 +90,7 @@ export const Service: React.FunctionComponent<Props> = ({
                   .changeReason.value;
                 setSending(true);
                 post(
-                  `/api/registry/${registry.contractId}/${service.id}/update`,
+                  `${process.env.BASE_URL}/api/registry/${registry.contractId}/${service.id}/update`,
                   {
                     json: {
                       ...service,
@@ -137,7 +137,7 @@ export const Service: React.FunctionComponent<Props> = ({
               onClick={() => {
                 setSending(true);
                 post(
-                  `/api/registry/${registry.contractId}/${service.id}/approve`,
+                  `${process.env.BASE_URL}/api/registry/${registry.contractId}/${service.id}/approve`,
                 ).then(
                   (response: ServerResponse) => {
                     setSending(false);

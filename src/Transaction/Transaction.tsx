@@ -60,7 +60,7 @@ export const Transaction: React.FunctionComponent<{}> = () => {
     if (!transaction) {
       return;
     }
-    const request = () => ky.get(`/api/tx?txId=${transaction}`).json();
+    const request = () => ky.get(`${process.env.BASE_URL}/api/tx?txId=${transaction}`).json();
     poll(request, (response) => {
       if (
         response.result &&

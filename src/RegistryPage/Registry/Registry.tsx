@@ -83,7 +83,7 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
               <Button
                 onClick={() => {
                   setSending(true);
-                  post(`/api/registry/${registry.contractId}/send`).then(
+                  post(`${process.env.BASE_URL}/api/registry/${registry.contractId}/send`).then(
                     (response: ServerResponse) => {
                       setSending(false);
                       updateTransactions({
@@ -114,7 +114,7 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
                 disabled={sending}
                 onClick={() => {
                   setSending(true);
-                  post(`/api/registry/${registry.contractId}/accept`).then(
+                  post(`${process.env.BASE_URL}/api/registry/${registry.contractId}/accept`).then(
                     (response: ServerResponse) => {
                       setSending(false);
                       updateTransactions({
@@ -141,7 +141,7 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
                 disabled={sending}
                 onClick={() => {
                   setSending(true);
-                  post(`/api/registry/${registry.contractId}/approve`).then(
+                  post(`${process.env.BASE_URL}/api/registry/${registry.contractId}/approve`).then(
                     (response: ServerResponse) => {
                       setSending(false);
                       updateTransactions({
