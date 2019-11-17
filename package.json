@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "build": "parcel build ./src/index.html",
-    "deploy": "NODE_ENV=productino npm run build && gh-pages -d dist",
+    "build": "parcel build ./src/index.html --public-url \"./\"",
+    "deploy": "NODE_ENV=production npm run build && gh-pages -d dist",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "proxy": {
