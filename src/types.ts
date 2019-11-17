@@ -25,6 +25,7 @@ export interface Shipment {
 
 export interface Registry {
   contractId: string;
+  number: string;
   company: {
     address: string;
     inn: string;

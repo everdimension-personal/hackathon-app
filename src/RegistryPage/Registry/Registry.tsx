@@ -18,9 +18,12 @@ import {
   mapOverServiceFields,
   mapOverShipmentFields,
   describeRegistryStatus,
+  getDisplayField,
+  getServiceFieldsInUserOrder,
 } from '../../data/registry';
 import { useTransactionStore } from '../../data/transactionStore';
 import { useUserStore } from '../../data/userStore';
+import { useCompanySettings } from '../../data/companySettingsStore';
 import { ServerResponse } from '../../types';
 import { post } from '../../data/post';
 
@@ -30,6 +33,7 @@ interface Props {
 
 export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
   const isLarge = useMedia('(min-width: 600px)');
+  const [companySettings] = useCompanySettings();
   const [user] = useUserStore();
   const { error, loading, data: registries } = useRegistries();
   const [transactions, updateTransactions] = useTransactionStore();
@@ -56,7 +60,7 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
         />
       ) : (
         <>
-          <H2>Реестр</H2>
+          <H2>Реестр &laquo;{registry.number}&raquo;</H2>
 
           <br />
           <div>
@@ -169,15 +173,25 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
                   ))}
                   <th>code</th>
                   <th>name</th>
-                  {mapOverServiceFields(registry).map((fieldName) => (
-                    <th>{fieldName}</th>
+                  {getServiceFieldsInUserOrder(
+                    mapOverServiceFields(registry),
+                    registry,
+                    companySettings,
+                  ).map((fieldName) => (
+                    <th>
+                      {getDisplayField(fieldName, registry, companySettings)}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {registry.shipments.map((shipment) => {
                   const shipmentFields = mapOverShipmentFields(registry);
-                  const serviceFields = mapOverServiceFields(registry);
+                  const serviceFields = getServiceFieldsInUserOrder(
+                    mapOverServiceFields(registry),
+                    registry,
+                    companySettings,
+                  );
                   return (
                     <React.Fragment key={`shipment-${shipment.id}`}>
                       {shipment.services.map((service) => {

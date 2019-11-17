@@ -17,8 +17,11 @@ import { refetchRegistries } from '../../data/registriesStore';
 import {
   mapOverServiceFields,
   mapOverShipmentFields,
+  getDisplayField,
+  getServiceFieldsInUserOrder,
 } from '../../data/registry';
 import { useUserStore } from '../../data/userStore';
+import { useCompanySettings } from '../../data/companySettingsStore';
 import { useTransactionStore } from '../../data/transactionStore';
 import { post } from '../../data/post';
 import { useRequest } from '../../data/useRequest';
@@ -36,10 +39,15 @@ export const Service: React.FunctionComponent<Props> = ({
 }) => {
   const isLarge = useMedia('(min-width: 600px)');
   const [user] = useUserStore();
+  const [companySettings] = useCompanySettings();
   const [transactions, updateTransactions] = useTransactionStore();
   const [sending, setSending] = useState(false);
   const shipmentFieldNames = mapOverShipmentFields(registry);
-  const fieldNames = mapOverServiceFields(registry);
+  const fieldNames = getServiceFieldsInUserOrder(
+    mapOverServiceFields(registry),
+    registry,
+    companySettings,
+  );
   const [values, setValues] = useState({ ...service });
   const [editing, setEditing] = useState({});
 
@@ -177,7 +185,16 @@ export const Service: React.FunctionComponent<Props> = ({
             {fieldNames.map((fieldName) => (
               <tr key={fieldName}>
                 <td>
-                  <strong>{fieldName}</strong>
+                  <Popover
+                    content={<span style={{ padding: 5 }}>{fieldName}</span>}
+                    interactionKind="hover"
+                    minimal
+                    position={Position.TOP}
+                  >
+                    <strong>
+                      {getDisplayField(fieldName, registry, companySettings)}
+                    </strong>
+                  </Popover>
                 </td>
                 <td>
                   <EditableText
@@ -208,9 +225,9 @@ export const Service: React.FunctionComponent<Props> = ({
                             String(prev[fieldName]) !==
                             String(service[fieldName]),
                         )
-                        .map((prev) => (
+                        .map((prev, index) => (
                           <>
-                            —{' '}
+                            {index === 0 ? '← ' : ' '}
                             <Popover
                               position={Position.TOP}
                               interactionKind="hover"

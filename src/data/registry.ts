@@ -1,4 +1,5 @@
 import { Registry as IRegistry } from '../types';
+import { UserStore } from './userStore';
 
 const hiddenShipmentKeys = new Set([
   'services',
@@ -49,6 +50,58 @@ export function mapOverServiceFields(registry: IRegistry) {
     }
     fields.push(key);
   });
+  return fields;
+}
+
+export function getDisplayField(
+  fieldName: string,
+  registry: IRegistry,
+  // user: UserStore,
+  companySettings,
+) {
+  const companyAddress = registry.company.address;
+  if (!companyAddress) {
+    return fieldName;
+  }
+  // const fieldPresentationStore = JSON.parse(
+  //   localStorage.getItem(`${user.username}-presentation`),
+  // );
+  if (!companySettings[companyAddress]) {
+    return fieldName;
+  }
+  return companySettings[companyAddress][fieldName] || fieldName;
+}
+
+export function loadFieldPresentation(user: UserStore) {
+  try {
+    const data = JSON.parse(
+      localStorage.getItem(`${user.username}-presentation`),
+    );
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
+export function saveFieldPresentation(
+  companySettings: Object,
+  user: UserStore,
+) {
+  localStorage.setItem(
+    `${user.username}-presentation`,
+    JSON.stringify(companySettings),
+  );
+}
+
+export function getServiceFieldsInUserOrder(
+  fields,
+  registry: IRegistry,
+  companySettings,
+) {
+  const companyKey = `${registry.company.address}-order`;
+  if (companyKey in companySettings && companySettings[companyKey].length) {
+    return companySettings[companyKey];
+  }
   return fields;
 }
 

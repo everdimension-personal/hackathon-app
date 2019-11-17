@@ -25,7 +25,7 @@ export const CompanySettings: React.FunctionComponent<Props> = ({
   // const shipmentFields = mapOverShipmentFields(registry);
   return (
     <div>
-      <H2>Компания: {registry.company.name}</H2>
+      <H2>Компания: &laquo;{registry.company.name}&raquo;</H2>
       <H4>Таблица соответствий</H4>
       <CompanySettingsList registry={registry} />
     </div>
