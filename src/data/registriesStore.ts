@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createStore } from 'hooksy';
 import ky from 'ky';
-import { Registry, Shipment } from '../types';
+import { Registry, Shipment, ServerResponse } from '../types';
 import { registriesSample } from './registriesSample';
 // import { useRequest } from './useRequest';
 
@@ -77,6 +77,27 @@ export function useRegistries() {
     error,
     data: registries.results || [],
   };
+}
+
+export function refetchRegistries() {
+  ky.get('/api/registry')
+    .json()
+    .then(
+      (data: ServerResponse) => {
+        console.log('data', data);
+
+        updateRegistries({
+          first: data.result.first,
+          last: data.result.last,
+          results: data.result.content,
+        });
+        // setLoading(false);
+      },
+      () => {
+        // setLoading(false);
+        // setError(true);
+      },
+    );
 }
 
 export function findRegistryByContractId(registries: Registry[], id: string) {

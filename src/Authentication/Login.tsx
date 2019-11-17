@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FormGroup, InputGroup, Button } from '@blueprintjs/core';
 import { AuthLayout } from './AuthLayout';
+import { UserData } from '../data/userStore';
 
 interface Props {
-  onLogin: (user: any) => void;
+  onLogin: (user: UserData) => void;
 }
 export const Login: React.FC<Props> = ({ onLogin }) => {
   const [sending, setSending] = useState(false);
@@ -20,7 +21,8 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
           setSending(true);
           setTimeout(() => {
             setSending(false);
-            onLogin({ username });
+            const role = username === 'client' ? 'CLIENT' : 'CONTRACTOR';
+            onLogin({ username, role });
           }, 2000);
         }}
       >

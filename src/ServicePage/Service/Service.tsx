@@ -1,16 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import ky from 'ky';
+import { useMedia } from 'the-platform';
 import {
   Service as IService,
   Shipment as IShipment,
   Registry as IRegistry,
+  ServerResponse,
 } from '../../types';
 import { HTMLTable, Button } from '@blueprintjs/core';
+import { Popover, Position, Card } from '@blueprintjs/core';
+import { Tag } from '@blueprintjs/core';
+import { Callout } from '@blueprintjs/core';
 import { ControlGroup, InputGroup } from '@blueprintjs/core';
 import { EditableText } from '@blueprintjs/core';
+import { refetchRegistries } from '../../data/registriesStore';
 import {
   mapOverServiceFields,
   mapOverShipmentFields,
 } from '../../data/registry';
+import { useUserStore } from '../../data/userStore';
+import { useTransactionStore } from '../../data/transactionStore';
+import { post } from '../../data/post';
+import { useRequest } from '../../data/useRequest';
 
 interface Props {
   registry: IRegistry;
@@ -23,10 +34,27 @@ export const Service: React.FunctionComponent<Props> = ({
   shipment,
   service,
 }) => {
+  const isLarge = useMedia('(min-width: 600px)');
+  const [user] = useUserStore();
+  const [transactions, updateTransactions] = useTransactionStore();
+  const [sending, setSending] = useState(false);
   const shipmentFieldNames = mapOverShipmentFields(registry);
   const fieldNames = mapOverServiceFields(registry);
   const [values, setValues] = useState({ ...service });
   const [editing, setEditing] = useState({});
+
+  useEffect(() => {
+    setValues({ ...service });
+  }, [service]);
+
+  const request = useCallback(() => {
+    return ky(`/api/registry/${registry.contractId}/${service.id}/history`)
+      .json()
+      .then((response: ServerResponse) => response.result);
+  }, [registry.contractId, service.id]);
+
+  const { loading, error, data: history } = useRequest({ request });
+
   const someChanges = fieldNames.some(
     (f) => String(values[f]) !== String(service[f]),
   );
@@ -37,28 +65,102 @@ export const Service: React.FunctionComponent<Props> = ({
   return (
     <div>
       <br />
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-          }}
-        >
-          <ControlGroup vertical={false} style={{ marginRight: '0.5em' }}>
-            <InputGroup
-              placeholder="комментарий к изменениям"
-              disabled={!someChanges}
-              required={hasChangesThatRequireComments}
-            />
-            <Button type="submit" disabled={!someChanges}>
-              Обновить
+      <div
+        style={
+          isLarge
+            ? { display: 'flex', justifyContent: 'flex-end' }
+            : { display: 'grid', gridGap: 5 }
+        }
+      >
+        {(service.status === 'ACCEPTING_CLIENT' && user.role === 'CLIENT') ||
+        (service.status === 'ACCEPTING_OWNER' && user.role === 'CONTRACTOR') ? (
+          <>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                const changeReason = (event.currentTarget.elements as any)
+                  .changeReason.value;
+                setSending(true);
+                post(
+                  `/api/registry/${registry.contractId}/${service.id}/update`,
+                  {
+                    json: {
+                      ...service,
+                      ...values,
+                      changeReason,
+                      changeAuthor: user.username,
+                    },
+                  },
+                ).then(
+                  (response: ServerResponse) => {
+                    setSending(false);
+                    updateTransactions({
+                      ...transactions,
+                      transaction: response.result,
+                    });
+                    refetchRegistries();
+                  },
+                  () => {
+                    setSending(false);
+                  },
+                );
+              }}
+            >
+              <ControlGroup vertical={false} style={{ marginRight: '0.5em' }}>
+                <InputGroup
+                  name="changeReason"
+                  placeholder="комментарий к изменениям"
+                  disabled={!someChanges || sending}
+                  required={hasChangesThatRequireComments}
+                />
+                <Button
+                  type="submit"
+                  disabled={!someChanges || sending}
+                  loading={sending}
+                >
+                  Обновить
+                </Button>
+              </ControlGroup>
+            </form>
+            <Button
+              disabled={someChanges || sending}
+              loading={sending}
+              intent="success"
+              onClick={() => {
+                setSending(true);
+                post(
+                  `/api/registry/${registry.contractId}/${service.id}/approve`,
+                ).then(
+                  (response: ServerResponse) => {
+                    setSending(false);
+                    updateTransactions({
+                      ...transactions,
+                      transaction: response.result,
+                    });
+                    refetchRegistries();
+                  },
+                  () => {
+                    setSending(false);
+                  },
+                );
+              }}
+            >
+              Принять
             </Button>
-          </ControlGroup>
-        </form>
-        <Button disabled={someChanges} intent="success">
-          Принять
-        </Button>
+          </>
+        ) : null}
+        {(service.status === 'ACCEPTING_CLIENT' &&
+          user.role === 'CONTRACTOR') ||
+        (service.status === 'ACCEPTING_OWNER' && user.role === 'CLIENT') ? (
+          <Tag>Ожидает согласования</Tag>
+        ) : null}
       </div>
       <br />
+      {service.changeReason ? (
+        <Callout icon="chat" intent="warning">
+          {service.changeReason}
+        </Callout>
+      ) : null}
       <div style={{ overflowX: 'auto', width: '100%' }}>
         <HTMLTable bordered style={{ width: '100%' }}>
           <tbody>
@@ -70,7 +172,6 @@ export const Service: React.FunctionComponent<Props> = ({
                 <td style={{ backgroundColor: 'var(--light-gray5)' }}>
                   {shipment[fieldName]}
                 </td>
-                <td style={{ backgroundColor: 'var(--light-gray5)' }}></td>
               </tr>
             ))}
             {fieldNames.map((fieldName) => (
@@ -78,19 +179,14 @@ export const Service: React.FunctionComponent<Props> = ({
                 <td>
                   <strong>{fieldName}</strong>
                 </td>
-                <td
-                  style={
-                    !editing[fieldName] &&
-                    String(values[fieldName]) !== String(service[fieldName])
-                      ? {
-                          backgroundColor: 'var(--green4)',
-                          color: 'white',
-                        }
-                      : undefined
-                  }
-                >
+                <td>
                   <EditableText
                     selectAllOnFocus
+                    intent={
+                      String(values[fieldName]) !== String(service[fieldName])
+                        ? 'success'
+                        : undefined
+                    }
                     value={values[fieldName]}
                     onChange={(value) => {
                       setValues({ ...values, [fieldName]: value });
@@ -103,20 +199,48 @@ export const Service: React.FunctionComponent<Props> = ({
                       setEditing({ ...editing, [fieldName]: false })
                     }
                   />
-                </td>
-                <td>
-                  {String(values[fieldName]) !== String(service[fieldName]) ? (
-                    <>
-                      <del>{service[fieldName]}</del>{' '}
-                      <span style={{ color: 'var(--gray3)' }}>
-                        (изменено вами)
-                      </span>
-                      <br />
-                    </>
-                  ) : null}
-                  <del style={{ color: 'var(--gray3)' }}>
-                    {service[fieldName]}
-                  </del>
+                  {history != null
+                    ? history
+                        .slice()
+                        .reverse()
+                        .filter(
+                          (prev) =>
+                            String(prev[fieldName]) !==
+                            String(service[fieldName]),
+                        )
+                        .map((prev) => (
+                          <>
+                            —{' '}
+                            <Popover
+                              position={Position.TOP}
+                              interactionKind="hover"
+                              content={
+                                <Card>
+                                  <div>
+                                    Дата изменения: {prev.lastUpdateDate}
+                                  </div>
+                                  <div>
+                                    Транзакция:{' '}
+                                    <a
+                                      href={`http://52.174.38.33/explorer/transactions/id/${prev.changeTxId}`}
+                                      target="_blank"
+                                    >
+                                      {prev.changeTxId}
+                                    </a>
+                                  </div>
+                                  {prev.changeAuthor ? (
+                                    <div>Изменил: {prev.changeAuthor}</div>
+                                  ) : null}
+                                </Card>
+                              }
+                            >
+                              <Tag minimal>
+                                <del>{prev[fieldName]}</del>
+                              </Tag>
+                            </Popover>
+                          </>
+                        ))
+                    : null}
                 </td>
               </tr>
             ))}

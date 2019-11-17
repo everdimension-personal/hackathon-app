@@ -12,6 +12,8 @@ export interface Service {
     name: string;
   };
   price: number;
+  status: 'ACCEPTING_CLIENT' | 'ACCEPTING_OWNER' | 'ACCEPTED';
+  changeReason: string | null;
 }
 
 export interface Shipment {
@@ -34,4 +36,5 @@ export interface Registry {
   regNumber: string;
   createdDate: string;
   shipments: Shipment[];
+  status: 'NEW' | 'ACCEPTING' | 'ACCEPTED' | 'APPROVED';
 }

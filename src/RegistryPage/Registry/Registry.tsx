@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import ky from 'ky';
+// import ky from 'ky';
 import { useMedia } from 'the-platform';
 import { H2 } from '@blueprintjs/core';
+import { Tag } from '@blueprintjs/core';
 import { NonIdealState } from '@blueprintjs/core';
 import { Button } from '@blueprintjs/core';
 import { HTMLTable } from '@blueprintjs/core';
@@ -10,14 +11,18 @@ import { useHistory, Link } from 'react-router-dom';
 // import { registry } from './sample';
 import {
   useRegistries,
+  refetchRegistries,
   findRegistryByContractId,
 } from '../../data/registriesStore';
 import {
   mapOverServiceFields,
   mapOverShipmentFields,
+  describeRegistryStatus,
 } from '../../data/registry';
 import { useTransactionStore } from '../../data/transactionStore';
+import { useUserStore } from '../../data/userStore';
 import { ServerResponse } from '../../types';
+import { post } from '../../data/post';
 
 interface Props {
   contractId: string;
@@ -25,6 +30,7 @@ interface Props {
 
 export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
   const isLarge = useMedia('(min-width: 600px)');
+  const [user] = useUserStore();
   const { error, loading, data: registries } = useRegistries();
   const [transactions, updateTransactions] = useTransactionStore();
   // const baseFields = ['id', 'code', 'name', 'price'];
@@ -40,6 +46,7 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
   if (error || !registry) {
     return <p>Ошибка запроса</p>;
   }
+  const status = describeRegistryStatus(registry.status, user);
   return (
     <div>
       {registry.shipments.length === 0 ? (
@@ -68,28 +75,89 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
                 : { textAlign: 'right' }
             }
           >
-            <Button
-              onClick={() => {
-                setSending(true);
-                ky.post(`/api/registry/${registry.contractId}/send`)
-                  .json()
-                  .then((response: ServerResponse) => {
-                    updateTransactions({
-                      ...transactions,
-                      transaction: response.result,
-                    });
-                  });
-              }}
-              disabled={sending}
-            >
-              Отправить на согласование
-            </Button>{' '}
-            <Button
-              intent="success"
-              disabled={sending}
-            >
-              Принять
-            </Button>
+            {registry.status === 'NEW' && status.actionRequired && (
+              <Button
+                onClick={() => {
+                  setSending(true);
+                  post(`/api/registry/${registry.contractId}/send`).then(
+                    (response: ServerResponse) => {
+                      setSending(false);
+                      updateTransactions({
+                        ...transactions,
+                        transaction: response.result,
+                      });
+                      refetchRegistries();
+                    },
+                    () => {
+                      setSending(false);
+                    },
+                  );
+                }}
+                disabled={sending}
+              >
+                Отправить на согласование
+              </Button>
+            )}
+            {registry.status === 'NEW' && user.role === 'CLIENT' && (
+              <Tag>Новый</Tag>
+            )}
+            {registry.status === 'ACCEPTING' && user.role === 'CONTRACTOR' && (
+              <Tag>На согласовании</Tag>
+            )}
+            {registry.status === 'ACCEPTING' && user.role === 'CLIENT' && (
+              <Button
+                intent="primary"
+                disabled={sending}
+                onClick={() => {
+                  setSending(true);
+                  post(`/api/registry/${registry.contractId}/accept`).then(
+                    (response: ServerResponse) => {
+                      setSending(false);
+                      updateTransactions({
+                        ...transactions,
+                        transaction: response.result,
+                      });
+                      refetchRegistries();
+                    },
+                    () => {
+                      setSending(false);
+                    },
+                  );
+                }}
+              >
+                Принять
+              </Button>
+            )}
+            {registry.status === 'ACCEPTED' && user.role === 'CLIENT' && (
+              <Tag>Принят</Tag>
+            )}
+            {registry.status === 'ACCEPTED' && user.role === 'CONTRACTOR' && (
+              <Button
+                intent="primary"
+                disabled={sending}
+                onClick={() => {
+                  setSending(true);
+                  post(`/api/registry/${registry.contractId}/approve`).then(
+                    (response: ServerResponse) => {
+                      setSending(false);
+                      updateTransactions({
+                        ...transactions,
+                        transaction: response.result,
+                      });
+                      refetchRegistries();
+                    },
+                    () => {
+                      setSending(false);
+                    },
+                  );
+                }}
+              >
+                Подписать
+              </Button>
+            )}
+            {registry.status === 'APPROVED' && (
+              <Tag intent="success">Подписан</Tag>
+            )}
           </div>
           <br />
           <div style={{ overflowX: 'auto', width: '100%' }}>
@@ -111,7 +179,7 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
                   const shipmentFields = mapOverShipmentFields(registry);
                   const serviceFields = mapOverServiceFields(registry);
                   return (
-                    <React.Fragment key={shipment.id}>
+                    <React.Fragment key={`shipment-${shipment.id}`}>
                       {shipment.services.map((service) => {
                         return (
                           <tr

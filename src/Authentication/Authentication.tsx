@@ -31,7 +31,14 @@ export const Authentication: React.FC<{ children: React.ReactElement }> = ({
         console.log('setting user');
         setLoading(false);
         setAuthorized(true);
-        setUser({ username: 'sub-zero' });
+        setUser(
+          token === 'client'
+            ? { username: 'Johny Client', role: 'CLIENT' }
+            : {
+                username: 'Robert Contractor',
+                role: 'CONTRACTOR',
+              },
+        );
         // history.push('/');
       }, 2000);
     }
@@ -43,7 +50,7 @@ export const Authentication: React.FC<{ children: React.ReactElement }> = ({
         <Route path="/login">
           <Login
             onLogin={(user) => {
-              localStorage.setItem('token', 'abc');
+              localStorage.setItem('token', user.username);
               setUser(user);
               setAuthorized(true);
               history.push('/');

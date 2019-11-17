@@ -71,12 +71,16 @@ export const Transaction: React.FunctionComponent<{}> = () => {
       }
     }).then(({ result }: ServerResponse) => {
       console.log('done polling');
-      if (result.kind === 'SUCCESS') {
-        updateTransactions({
-          history: [...transactions.history, transaction],
-          transaction: null,
+      if (result.kind === 'FAILURE') {
+        TransactionToaster.show({
+          intent: 'danger',
+          message: <span>Ошибка транзакции</span>,
         });
       }
+      updateTransactions({
+        history: [...transactions.history, transaction],
+        transaction: null,
+      });
     });
   }, [transaction, transactions.history, updateTransactions]);
   if (!transaction) {
