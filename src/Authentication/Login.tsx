@@ -19,8 +19,8 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
           const password = (form.elements as any).password.value;
           setSending(true);
           setTimeout(() => {
-            onLogin({ username });
             setSending(false);
+            onLogin({ username });
           }, 2000);
         }}
       >

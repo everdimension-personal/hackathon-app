@@ -1,3 +1,10 @@
+export interface ServerResponse {
+  code: number;
+  message: string;
+  result: any;
+  success: boolean;
+}
+
 export interface Service {
   id: string;
   service: {

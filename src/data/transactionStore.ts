@@ -1,7 +1,7 @@
 import { createStore } from 'hooksy';
 
 export const [useTransactionStore, updateTransaction] = createStore<{
-  history: [];
+  history: string[];
   transaction?: string;
 }>({
   history: [],

@@ -12,6 +12,7 @@ export function useUser() {
 
   const logout = useCallback(() => {
     setUser(null);
+    localStorage.removeItem('token');
   }, [setUser]);
 
   const login = useCallback(

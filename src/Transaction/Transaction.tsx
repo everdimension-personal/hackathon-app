@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
+import { useMedia } from 'the-platform';
 import { Fill } from '@wordpress/components';
 import ky from 'ky';
 import { Position, Toaster } from '@blueprintjs/core';
 import { Spinner } from '@blueprintjs/core';
 import { useTransactionStore } from '../data/transactionStore';
+import { ServerResponse } from '../types';
 
 function poll(request, shouldStop) {
   return new Promise((resolve) => {
@@ -35,6 +37,7 @@ const TransactionToaster = Toaster.create({
 
 export const Transaction: React.FunctionComponent<{}> = () => {
   const [transactions, updateTransactions] = useTransactionStore();
+  const isLarge = useMedia('(min-width: 600px)');
 
   const { transaction } = transactions;
 
@@ -59,15 +62,21 @@ export const Transaction: React.FunctionComponent<{}> = () => {
     }
     const request = () => ky.get(`/api/tx?txId=${transaction}`).json();
     poll(request, (response) => {
-      if (response.result && response.result.kind === 'SUCCESS') {
+      if (
+        response.result &&
+        (response.result.kind === 'SUCCESS' ||
+          response.result.kind === 'FAILURE')
+      ) {
         return true;
       }
-    }).then(() => {
+    }).then(({ result }: ServerResponse) => {
       console.log('done polling');
-      updateTransactions({
-        history: [...transactions.history, transaction],
-        transaction: null,
-      });
+      if (result.kind === 'SUCCESS') {
+        updateTransactions({
+          history: [...transactions.history, transaction],
+          transaction: null,
+        });
+      }
     });
   }, [transaction, transactions.history, updateTransactions]);
   if (!transaction) {
@@ -76,7 +85,9 @@ export const Transaction: React.FunctionComponent<{}> = () => {
   return (
     <Fill name="system">
       <span style={{ display: 'flex', alignItems: 'center' }}>
-        <span style={{ marginRight: '0.5em' }}>Transaction in progress</span>
+        {isLarge ? (
+          <span style={{ marginRight: '0.5em' }}>Transaction in progress</span>
+        ) : null}
         <span>
           <Spinner size={Spinner.SIZE_SMALL} />
         </span>

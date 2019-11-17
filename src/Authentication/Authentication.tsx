@@ -8,24 +8,36 @@ export const Authentication: React.FC<{ children: React.ReactElement }> = ({
   children,
 }) => {
   const history = useHistory();
-  const [unauthorized, setUnauthorized] = useState(false);
+  // const [detecting, setDetecting] = useState(true);
+  // const [unauthorized, setUnauthorized] = useState(false);
   const [user, setUser] = useUserStore();
+  const [authorized, setAuthorized] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setAuthorized(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
       history.push('/login');
-      setUnauthorized(true);
+      setAuthorized(false);
+      setLoading(false);
     } else {
       setTimeout(() => {
         console.log('setting user');
+        setLoading(false);
+        setAuthorized(true);
         setUser({ username: 'sub-zero' });
         // history.push('/');
       }, 2000);
     }
   }, [history, setUser]);
 
-  if (unauthorized) {
+  if (!authorized && !loading) {
     return (
       <>
         <Route path="/login">
@@ -33,7 +45,7 @@ export const Authentication: React.FC<{ children: React.ReactElement }> = ({
             onLogin={(user) => {
               localStorage.setItem('token', 'abc');
               setUser(user);
-              setUnauthorized(false);
+              setAuthorized(true);
               history.push('/');
             }}
           />

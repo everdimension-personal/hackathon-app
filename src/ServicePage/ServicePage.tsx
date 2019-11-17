@@ -9,7 +9,10 @@ export const ServicePage: React.FunctionComponent = () => {
       path="/registries/:id/services/:serviceId"
       render={({ match }) => (
         <Fill name="layoutBody">
-          <ServicePageContent serviceId={match.params.serviceId} />
+          <ServicePageContent
+            contractId={match.params.id}
+            serviceId={match.params.serviceId}
+          />
         </Fill>
       )}
     />

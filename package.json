@@ -24,6 +24,7 @@
     "normalize.css": "^8.0.1",
     "parcel-bundler": "^1.12.4",
     "react": "^16.12.0",
+    "react-beautiful-dnd": "^12.1.1",
     "react-cache": "^2.0.0-alpha.1",
     "react-dom": "^16.12.0",
     "react-router-dom": "^5.1.2",

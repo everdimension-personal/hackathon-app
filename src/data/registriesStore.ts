@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createStore } from 'hooksy';
 import ky from 'ky';
-import { Registry } from '../types';
+import { Registry, Shipment } from '../types';
 import { registriesSample } from './registriesSample';
 // import { useRequest } from './useRequest';
 
@@ -77,4 +77,18 @@ export function useRegistries() {
     error,
     data: registries.results || [],
   };
+}
+
+export function findRegistryByContractId(registries: Registry[], id: string) {
+  return registries.find((r) => r.contractId === id);
+}
+
+export function findShipmentByServiceId(registry: Registry, id: string) {
+  return registry.shipments.find((shipment) =>
+    shipment.services.some((service) => service.id === id),
+  );
+}
+
+export function findServiceById(shipment: Shipment, id: string) {
+  return shipment.services.find((service) => service.id === id);
 }

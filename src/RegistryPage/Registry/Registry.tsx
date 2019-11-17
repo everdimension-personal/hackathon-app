@@ -1,4 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useState } from 'react';
+import ky from 'ky';
+import { useMedia } from 'the-platform';
 import { H2 } from '@blueprintjs/core';
 import { NonIdealState } from '@blueprintjs/core';
 import { Button } from '@blueprintjs/core';
@@ -6,62 +8,31 @@ import { HTMLTable } from '@blueprintjs/core';
 import { useHistory, Link } from 'react-router-dom';
 // import ky from 'ky';
 // import { registry } from './sample';
-import { useRegistries } from '../../data/registriesStore';
-import { Registry as IRegistry } from '../../types';
-
-function mapOverShipmentFields(registry: IRegistry) {
-  const fields = [];
-  if (!registry.shipments.length) {
-    return fields;
-  }
-  const shipment = registry.shipments[0];
-  Object.keys(shipment).forEach((key) => {
-    if (key === 'services') {
-      return;
-    }
-    fields.push(key);
-  });
-  console.log('shipment fileds', fields);
-  return fields;
-}
-
-function mapOverServiceFields(registry: IRegistry) {
-  const fields = [];
-  if (!registry.shipments.length) {
-    return fields;
-  }
-  const shipment = registry.shipments[0];
-  if (!shipment.services.length) {
-    return fields;
-  }
-  const service = shipment.services[0];
-  Object.keys(service).forEach((key) => {
-    if (key === 'service') {
-      return;
-    }
-    fields.push(key);
-  });
-  console.log('service fileds', fields);
-  return fields;
-}
+import {
+  useRegistries,
+  findRegistryByContractId,
+} from '../../data/registriesStore';
+import {
+  mapOverServiceFields,
+  mapOverShipmentFields,
+} from '../../data/registry';
+import { useTransactionStore } from '../../data/transactionStore';
+import { ServerResponse } from '../../types';
 
 interface Props {
   contractId: string;
 }
 
 export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
+  const isLarge = useMedia('(min-width: 600px)');
   const { error, loading, data: registries } = useRegistries();
-  const baseFields = ['id', 'code', 'name', 'price'];
+  const [transactions, updateTransactions] = useTransactionStore();
+  // const baseFields = ['id', 'code', 'name', 'price'];
   const history = useHistory();
+  const [sending, setSending] = useState(false);
 
-  const registry = registries.find((r) => r.contractId === contractId);
-
-  // const request = useCallback(() => {
-  //   return ky('/api/orgs/octokit/repos').then((d) => {
-  //     console.log('received', d);
-  //   });
-  // }, []);
-  // const { error, loading, data } = useRequest({ request });
+  // const registry = registries.find((r) => r.contractId === contractId);
+  const registry = findRegistryByContractId(registries, contractId);
 
   if (loading) {
     return <span>loading...</span>;
@@ -85,16 +56,43 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
             <div>Компания: {registry.company.name}</div>
             <div>ИНН: {registry.company.inn}</div>
             <div>КПП: {registry.company.kpp}</div>
-            <Link to={`/company/${registry.company.address}`}>
+            <Link to={`/company/${registry.contractId}`}>
               Настройки компании
             </Link>
           </div>
           <br />
-          <div style={{ textAlign: 'right' }}>
-            <Button intent="success">Принять</Button>
+          <div
+            style={
+              !isLarge
+                ? { display: 'grid', gridGap: 5 }
+                : { textAlign: 'right' }
+            }
+          >
+            <Button
+              onClick={() => {
+                setSending(true);
+                ky.post(`/api/registry/${registry.contractId}/send`)
+                  .json()
+                  .then((response: ServerResponse) => {
+                    updateTransactions({
+                      ...transactions,
+                      transaction: response.result,
+                    });
+                  });
+              }}
+              disabled={sending}
+            >
+              Отправить на согласование
+            </Button>{' '}
+            <Button
+              intent="success"
+              disabled={sending}
+            >
+              Принять
+            </Button>
           </div>
           <br />
-          <div style={{ overflowY: 'auto', width: '100%' }}>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
             <HTMLTable interactive={true} style={{ width: '100%' }}>
               <thead>
                 <tr>
