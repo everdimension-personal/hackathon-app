@@ -14,6 +14,7 @@ export interface Service {
   price: number;
   status: 'ACCEPTING_CLIENT' | 'ACCEPTING_OWNER' | 'ACCEPTED';
   changeReason: string | null;
+  lastUpdateDate: string;
 }
 
 export interface Shipment {

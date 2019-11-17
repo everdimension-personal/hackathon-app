@@ -26,6 +26,7 @@ import { useUserStore } from '../../data/userStore';
 import { useCompanySettings } from '../../data/companySettingsStore';
 import { ServerResponse } from '../../types';
 import { post } from '../../data/post';
+import { SignDialog } from '../../SignDialog/SignDialog';
 
 interface Props {
   contractId: string;
@@ -40,6 +41,7 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
   // const baseFields = ['id', 'code', 'name', 'price'];
   const history = useHistory();
   const [sending, setSending] = useState(false);
+  const [signDialogIsOpen, setSignDialogIsOpen] = useState(false);
 
   // const registry = registries.find((r) => r.contractId === contractId);
   const registry = findRegistryByContractId(registries, contractId);
@@ -80,27 +82,41 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
             }
           >
             {registry.status === 'NEW' && status.actionRequired && (
-              <Button
-                onClick={() => {
-                  setSending(true);
-                  post(`${process.env.BASE_URL}/api/registry/${registry.contractId}/send`).then(
-                    (response: ServerResponse) => {
-                      setSending(false);
-                      updateTransactions({
-                        ...transactions,
-                        transaction: response.result,
-                      });
-                      refetchRegistries();
-                    },
-                    () => {
-                      setSending(false);
-                    },
-                  );
-                }}
-                disabled={sending}
-              >
-                Отправить на согласование
-              </Button>
+              <>
+                <Button
+                  onClick={() => {
+                    setSignDialogIsOpen(true);
+                  }}
+                  disabled={sending}
+                  loading={sending}
+                >
+                  Отправить на согласование
+                </Button>
+                <SignDialog
+                  registry={registry}
+                  isOpen={signDialogIsOpen}
+                  onClose={() => setSignDialogIsOpen(false)}
+                  onSign={() => {
+                    setSignDialogIsOpen(false);
+                    setSending(true);
+                    post(
+                      `${process.env.BASE_URL}/api/registry/${registry.contractId}/send`,
+                    ).then(
+                      (response: ServerResponse) => {
+                        setSending(false);
+                        updateTransactions({
+                          ...transactions,
+                          transaction: response.result,
+                        });
+                        refetchRegistries();
+                      },
+                      () => {
+                        setSending(false);
+                      },
+                    );
+                  }}
+                />
+              </>
             )}
             {registry.status === 'NEW' && user.role === 'CLIENT' && (
               <Tag>Новый</Tag>
@@ -109,55 +125,83 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
               <Tag>На согласовании</Tag>
             )}
             {registry.status === 'ACCEPTING' && user.role === 'CLIENT' && (
-              <Button
-                intent="primary"
-                disabled={sending}
-                onClick={() => {
-                  setSending(true);
-                  post(`${process.env.BASE_URL}/api/registry/${registry.contractId}/accept`).then(
-                    (response: ServerResponse) => {
-                      setSending(false);
-                      updateTransactions({
-                        ...transactions,
-                        transaction: response.result,
-                      });
-                      refetchRegistries();
-                    },
-                    () => {
-                      setSending(false);
-                    },
-                  );
-                }}
-              >
-                Принять
-              </Button>
+              <>
+                <Button
+                  intent="primary"
+                  disabled={sending}
+                  loading={sending}
+                  onClick={() => {
+                    setSignDialogIsOpen(true);
+                  }}
+                >
+                  Принять
+                </Button>
+                <SignDialog
+                  registry={registry}
+                  isOpen={signDialogIsOpen}
+                  onClose={() => setSignDialogIsOpen(false)}
+                  onSign={() => {
+                    setSignDialogIsOpen(false);
+                    setSending(true);
+                    post(
+                      `${process.env.BASE_URL}/api/registry/${registry.contractId}/accept`,
+                    ).then(
+                      (response: ServerResponse) => {
+                        setSending(false);
+                        updateTransactions({
+                          ...transactions,
+                          transaction: response.result,
+                        });
+                        refetchRegistries();
+                      },
+                      () => {
+                        setSending(false);
+                      },
+                    );
+                  }}
+                />
+              </>
             )}
             {registry.status === 'ACCEPTED' && user.role === 'CLIENT' && (
               <Tag>Принят</Tag>
             )}
             {registry.status === 'ACCEPTED' && user.role === 'CONTRACTOR' && (
-              <Button
-                intent="primary"
-                disabled={sending}
-                onClick={() => {
-                  setSending(true);
-                  post(`${process.env.BASE_URL}/api/registry/${registry.contractId}/approve`).then(
-                    (response: ServerResponse) => {
-                      setSending(false);
-                      updateTransactions({
-                        ...transactions,
-                        transaction: response.result,
-                      });
-                      refetchRegistries();
-                    },
-                    () => {
-                      setSending(false);
-                    },
-                  );
-                }}
-              >
-                Подписать
-              </Button>
+              <>
+                <Button
+                  intent="primary"
+                  disabled={sending}
+                  loading={sending}
+                  onClick={() => {
+                    setSignDialogIsOpen(true);
+                  }}
+                >
+                  Подписать
+                </Button>
+                <SignDialog
+                  registry={registry}
+                  isOpen={signDialogIsOpen}
+                  onClose={() => setSignDialogIsOpen(false)}
+                  onSign={() => {
+                    setSignDialogIsOpen(false);
+                    setSending(true);
+                    post(
+                      `${process.env.BASE_URL}/api/registry/${registry.contractId}/approve`,
+                    ).then(
+                      (response: ServerResponse) => {
+                        setSending(false);
+                        updateTransactions({
+                          ...transactions,
+                          transaction: response.result,
+                        });
+                        refetchRegistries();
+                      },
+                      () => {
+                        setSending(false);
+                      },
+                    );
+                  }}
+                />
+              </>
             )}
             {registry.status === 'APPROVED' && (
               <Tag intent="success">Подписан</Tag>
@@ -195,6 +239,12 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
                   return (
                     <React.Fragment key={`shipment-${shipment.id}`}>
                       {shipment.services.map((service) => {
+                        const pendingChanges =
+                          service.status === 'ACCEPTING_OWNER' &&
+                          user.role === 'CONTRACTOR';
+                        const cellStyle = pendingChanges
+                          ? { backgroundColor: 'var(--gold5)' }
+                          : undefined;
                         return (
                           <tr
                             key={service.id}
@@ -205,12 +255,16 @@ export const Registry: React.FunctionComponent<Props> = ({ contractId }) => {
                             }
                           >
                             {shipmentFields.map((fieldName) => (
-                              <td key={fieldName}>{shipment[fieldName]}</td>
+                              <td key={fieldName} style={cellStyle}>
+                                {shipment[fieldName]}
+                              </td>
                             ))}
-                            <td>{service.service.code}</td>
-                            <td>{service.service.name}</td>
+                            <td style={cellStyle}>{service.service.code}</td>
+                            <td style={cellStyle}>{service.service.name}</td>
                             {serviceFields.map((fieldName) => (
-                              <td key={fieldName}>{service[fieldName]}</td>
+                              <td key={fieldName} style={cellStyle}>
+                                {service[fieldName]}
+                              </td>
                             ))}
                           </tr>
                         );

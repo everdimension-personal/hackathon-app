@@ -33,9 +33,9 @@ export const Authentication: React.FC<{ children: React.ReactElement }> = ({
         setAuthorized(true);
         setUser(
           token === 'client'
-            ? { username: 'Johny Client', role: 'CLIENT' }
+            ? { username: 'Юля Паламарчук', role: 'CLIENT' }
             : {
-                username: 'Robert Contractor',
+                username: 'Денис Васин',
                 role: 'CONTRACTOR',
               },
         );

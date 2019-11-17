@@ -20,6 +20,7 @@
   "dependencies": {
     "@blueprintjs/core": "^3.17.2",
     "@blueprintjs/icons": "^3.12.0",
+    "@blueprintjs/select": "^3.11.2",
     "@wordpress/components": "^8.4.0",
     "hooksy": "^1.0.0",
     "ky": "^0.16.0",

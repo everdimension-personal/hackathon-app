@@ -41,7 +41,8 @@ export const Service: React.FunctionComponent<Props> = ({
   const [user] = useUserStore();
   const [companySettings] = useCompanySettings();
   const [transactions, updateTransactions] = useTransactionStore();
-  const [sending, setSending] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [approving, setApproving] = useState(false);
   const shipmentFieldNames = mapOverShipmentFields(registry);
   const fieldNames = getServiceFieldsInUserOrder(
     mapOverServiceFields(registry),
@@ -56,7 +57,9 @@ export const Service: React.FunctionComponent<Props> = ({
   }, [service]);
 
   const request = useCallback(() => {
-    return ky(`${process.env.BASE_URL}/api/registry/${registry.contractId}/${service.id}/history`)
+    return ky(
+      `${process.env.BASE_URL}/api/registry/${registry.contractId}/${service.id}/history`,
+    )
       .json()
       .then((response: ServerResponse) => response.result);
   }, [registry.contractId, service.id]);
@@ -88,20 +91,22 @@ export const Service: React.FunctionComponent<Props> = ({
                 event.preventDefault();
                 const changeReason = (event.currentTarget.elements as any)
                   .changeReason.value;
-                setSending(true);
+                setUpdating(true);
+                const payload = {
+                  ...service,
+                  ...values,
+                  changeReason,
+                  changeAuthor: user.username,
+                };
+                delete payload.lastUpdateDate;
                 post(
                   `${process.env.BASE_URL}/api/registry/${registry.contractId}/${service.id}/update`,
                   {
-                    json: {
-                      ...service,
-                      ...values,
-                      changeReason,
-                      changeAuthor: user.username,
-                    },
+                    json: payload,
                   },
                 ).then(
                   (response: ServerResponse) => {
-                    setSending(false);
+                    setUpdating(false);
                     updateTransactions({
                       ...transactions,
                       transaction: response.result,
@@ -109,7 +114,7 @@ export const Service: React.FunctionComponent<Props> = ({
                     refetchRegistries();
                   },
                   () => {
-                    setSending(false);
+                    setUpdating(false);
                   },
                 );
               }}
@@ -118,29 +123,29 @@ export const Service: React.FunctionComponent<Props> = ({
                 <InputGroup
                   name="changeReason"
                   placeholder="комментарий к изменениям"
-                  disabled={!someChanges || sending}
+                  disabled={!someChanges || updating}
                   required={hasChangesThatRequireComments}
                 />
                 <Button
                   type="submit"
-                  disabled={!someChanges || sending}
-                  loading={sending}
+                  disabled={!someChanges || updating || approving}
+                  loading={updating}
                 >
                   Обновить
                 </Button>
               </ControlGroup>
             </form>
             <Button
-              disabled={someChanges || sending}
-              loading={sending}
+              disabled={someChanges || updating || approving}
+              loading={approving}
               intent="success"
               onClick={() => {
-                setSending(true);
+                setApproving(true);
                 post(
                   `${process.env.BASE_URL}/api/registry/${registry.contractId}/${service.id}/approve`,
                 ).then(
                   (response: ServerResponse) => {
-                    setSending(false);
+                    setApproving(false);
                     updateTransactions({
                       ...transactions,
                       transaction: response.result,
@@ -148,7 +153,7 @@ export const Service: React.FunctionComponent<Props> = ({
                     refetchRegistries();
                   },
                   () => {
-                    setSending(false);
+                    setApproving(false);
                   },
                 );
               }}
@@ -233,10 +238,10 @@ export const Service: React.FunctionComponent<Props> = ({
                               interactionKind="hover"
                               content={
                                 <Card>
-                                  <div>
+                                  <div style={{ marginBottom: 10 }}>
                                     Дата изменения: {prev.lastUpdateDate}
                                   </div>
-                                  <div>
+                                  <div style={{ marginBottom: 10 }}>
                                     Транзакция:{' '}
                                     <a
                                       href={`http://52.174.38.33/explorer/transactions/id/${prev.changeTxId}`}
@@ -246,7 +251,60 @@ export const Service: React.FunctionComponent<Props> = ({
                                     </a>
                                   </div>
                                   {prev.changeAuthor ? (
-                                    <div>Изменил: {prev.changeAuthor}</div>
+                                    <div
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                      }}
+                                    >
+                                      <span style={{ marginRight: '0.5em' }}>
+                                        Изменил:{' '}
+                                      </span>
+                                      {prev.changeAuthor === 'Денис Васин' ? (
+                                        <span
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                          }}
+                                        >
+                                          <img
+                                            src={require('../../assets/contractor-avatar.jpg')}
+                                            style={{
+                                              width: 32,
+                                              height: 32,
+                                              borderRadius: '50%',
+                                            }}
+                                            alt=""
+                                          />
+                                          <span style={{ marginLeft: '0.5em' }}>
+                                            {user.username}
+                                          </span>
+                                        </span>
+                                      ) : prev.changeAuthor ===
+                                        'Юля Паламарчук' ? (
+                                        <span
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                          }}
+                                        >
+                                          <img
+                                            src={require('../../assets/client-avatar.jpg')}
+                                            style={{
+                                              width: 32,
+                                              height: 32,
+                                              borderRadius: '50%',
+                                            }}
+                                            alt=""
+                                          />
+                                          <span style={{ marginLeft: '0.5em' }}>
+                                            {prev.changeAuthor}
+                                          </span>
+                                        </span>
+                                      ) : (
+                                        <span>{prev.changeAuthor}</span>
+                                      )}
+                                    </div>
                                   ) : null}
                                 </Card>
                               }
