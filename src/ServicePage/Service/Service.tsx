@@ -25,6 +25,7 @@ import { useCompanySettings } from '../../data/companySettingsStore';
 import { useTransactionStore } from '../../data/transactionStore';
 import { post } from '../../data/post';
 import { useRequest } from '../../data/useRequest';
+import { formatDateTime } from '../../formatDate';
 
 interface Props {
   registry: IRegistry;
@@ -230,91 +231,108 @@ export const Service: React.FunctionComponent<Props> = ({
                             String(prev[fieldName]) !==
                             String(service[fieldName]),
                         )
-                        .map((prev, index) => (
-                          <>
-                            {index === 0 ? '← ' : ' '}
-                            <Popover
-                              position={Position.TOP}
-                              interactionKind="hover"
-                              content={
-                                <Card>
-                                  <div style={{ marginBottom: 10 }}>
-                                    Дата изменения: {prev.lastUpdateDate}
-                                  </div>
-                                  <div style={{ marginBottom: 10 }}>
-                                    Транзакция:{' '}
-                                    <a
-                                      href={`http://52.174.38.33/explorer/transactions/id/${prev.changeTxId}`}
-                                      target="_blank"
-                                    >
-                                      {prev.changeTxId}
-                                    </a>
-                                  </div>
-                                  {prev.changeAuthor ? (
-                                    <div
-                                      style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                      }}
-                                    >
-                                      <span style={{ marginRight: '0.5em' }}>
-                                        Изменил:{' '}
-                                      </span>
-                                      {prev.changeAuthor === 'Денис Васин' ? (
-                                        <span
-                                          style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                          }}
-                                        >
-                                          <img
-                                            src={require('../../assets/contractor-avatar.jpg')}
-                                            style={{
-                                              width: 32,
-                                              height: 32,
-                                              borderRadius: '50%',
-                                            }}
-                                            alt=""
-                                          />
-                                          <span style={{ marginLeft: '0.5em' }}>
-                                            {user.username}
-                                          </span>
-                                        </span>
-                                      ) : prev.changeAuthor ===
-                                        'Юля Паламарчук' ? (
-                                        <span
-                                          style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                          }}
-                                        >
-                                          <img
-                                            src={require('../../assets/client-avatar.jpg')}
-                                            style={{
-                                              width: 32,
-                                              height: 32,
-                                              borderRadius: '50%',
-                                            }}
-                                            alt=""
-                                          />
-                                          <span style={{ marginLeft: '0.5em' }}>
-                                            {prev.changeAuthor}
-                                          </span>
-                                        </span>
-                                      ) : (
-                                        <span>{prev.changeAuthor}</span>
+                        .map((prev, index, array) => {
+                          const changeInfo =
+                            index === 0 ? service : array[index - 1];
+                          return (
+                            <>
+                              {index === 0 ? '← ' : ' '}
+                              <Popover
+                                position={Position.TOP}
+                                interactionKind="hover"
+                                content={
+                                  <Card>
+                                    <div style={{ marginBottom: 10 }}>
+                                      Дата изменения:{' '}
+                                      {formatDateTime(
+                                        changeInfo.lastUpdateDate,
                                       )}
                                     </div>
-                                  ) : null}
-                                </Card>
-                              }
-                            >
-                              <Tag minimal>
-                                <del>{prev[fieldName]}</del>
-                              </Tag>
-                            </Popover>
-                          </>
-                        ))
+                                    <div style={{ marginBottom: 10 }}>
+                                      Транзакция:{' '}
+                                      <a
+                                        href={`http://52.174.38.33/explorer/transactions/id/${changeInfo.changeTxId}`}
+                                        target="_blank"
+                                      >
+                                        {changeInfo.changeTxId}
+                                      </a>
+                                    </div>
+                                    {changeInfo.changeAuthor ? (
+                                      <div
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                        }}
+                                      >
+                                        <span style={{ marginRight: '0.5em' }}>
+                                          Изменил:{' '}
+                                        </span>
+                                        {changeInfo.changeAuthor ===
+                                        'Денис Васин' ? (
+                                          <span
+                                            style={{
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                            }}
+                                          >
+                                            <img
+                                              src={require('../../assets/contractor-avatar.jpg')}
+                                              style={{
+                                                width: 32,
+                                                height: 32,
+                                                borderRadius: '50%',
+                                              }}
+                                              alt=""
+                                            />
+                                            <span
+                                              style={{ marginLeft: '0.5em' }}
+                                            >
+                                              {changeInfo.changeAuthor}
+                                            </span>
+                                          </span>
+                                        ) : changeInfo.changeAuthor ===
+                                          'Юля Паламарчук' ? (
+                                          <span
+                                            style={{
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                            }}
+                                          >
+                                            <img
+                                              src={require('../../assets/client-avatar.jpg')}
+                                              style={{
+                                                width: 32,
+                                                height: 32,
+                                                borderRadius: '50%',
+                                              }}
+                                              alt=""
+                                            />
+                                            <span
+                                              style={{ marginLeft: '0.5em' }}
+                                            >
+                                              {changeInfo.changeAuthor}
+                                            </span>
+                                          </span>
+                                        ) : (
+                                          <span>{changeInfo.changeAuthor}</span>
+                                        )}
+                                      </div>
+                                    ) : null}
+                                    {changeInfo.changeReason ? (
+                                      <div style={{ marginTop: 10 }}>
+                                        Комментарий: {changeInfo.changeReason}
+                                      </div>
+                                    ) : null}
+                                  </Card>
+                                }
+                              >
+                                <Tag minimal>
+                                  <del>{prev[fieldName]}</del>
+                                </Tag>
+                              </Popover>
+                            </>
+                          );
+                        })
                     : null}
                 </td>
               </tr>

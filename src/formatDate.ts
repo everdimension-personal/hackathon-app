@@ -8,5 +8,9 @@ const dateTimeFormatter = new Intl.DateTimeFormat('ru-RU', {
 });
 
 export function formatDateTime(date: Date) {
-  return dateTimeFormatter.format(date);
+  const dateObject = new Date(date);
+  if (dateObject.toString() === 'Invalid Date') {
+    return date;
+  }
+  return dateTimeFormatter.format(dateObject);
 }

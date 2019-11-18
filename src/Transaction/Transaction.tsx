@@ -48,7 +48,10 @@ export const Transaction: React.FunctionComponent<{}> = () => {
         message: (
           <span>
             Создана{' '}
-            <a href={`http://163.172.139.34:8877/api/tx?txId=${transaction}`}>
+            <a
+              href={`http://52.174.38.33/explorer/transactions/id/${transaction}`}
+              target="_blank"
+            >
               транзакция
             </a>
           </span>
@@ -60,7 +63,8 @@ export const Transaction: React.FunctionComponent<{}> = () => {
     if (!transaction) {
       return;
     }
-    const request = () => ky.get(`${process.env.BASE_URL}/api/tx?txId=${transaction}`).json();
+    const request = () =>
+      ky.get(`${process.env.BASE_URL}/api/tx?txId=${transaction}`).json();
     poll(request, (response) => {
       if (
         response.result &&
